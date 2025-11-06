@@ -7,8 +7,9 @@ from utils.logging import init_logger, get_logger, log_message, stop_logger
 initialize_session_state()
 
 # Initialize logger if character exists and logger not already initialized
-if st.session_state.get("character") and not st.session_state.get("_logger_initialized", False):
-	character_name = st.session_state["character"].get("name", "Unknown")
+character = st.session_state.get("character")
+if character and not st.session_state.get("_logger_initialized", False):
+	character_name = character.get("name", "Unknown")
 	init_logger(character_name, enable_print_capture=True)
 	st.session_state["_logger_initialized"] = True
 	st.session_state["_log_file"] = get_logger().log_file if get_logger() else None
@@ -44,14 +45,18 @@ with st.sidebar:
 	st.divider()
 	
 	# Show character info if available
-	if st.session_state.get("character"):
+	character = st.session_state.get("character")
+	if character:
 		st.subheader("Current Character")
-		ch = st.session_state["character"]
-		st.text(f"Name: {ch.get('name', 'N/A')}")
-		st.text(f"STR: {ch.get('str', 0)} | INT: {ch.get('int', 0)} | POW: {ch.get('pow', 0)}")
-		st.text(f"SAN: {ch.get('san', 0)}")
-		st.caption(f"SPOT: {ch.get('spot', 0)} | LISTEN: {ch.get('listen', 0)} | STEALTH: {ch.get('stealth', 0)}")
-		st.caption(f"CHARM: {ch.get('charm', 0)} | LUCK: {ch.get('luck', 0)}")
+		st.text(f"Name: {character.get('name', 'N/A')}")
+		st.text(f"STR: {character.get('str', 0)} | INT: {character.get('int', 0)} | POW: {character.get('pow', 0)}")
+		st.text(f"SAN: {character.get('san', 0)}")
+		st.caption(f"SPOT: {character.get('spot', 0)} | LISTEN: {character.get('listen', 0)} | STEALTH: {character.get('stealth', 0)}")
+		st.caption(f"CHARM: {character.get('charm', 0)} | LUCK: {character.get('luck', 0)}")
+	else:
+		st.subheader("Current Character")
+		st.warning("⚠️ No character created yet")
+		st.info("💡 Please go to the 'Create Character' page to create your character first.")
 	
 	# Show current scene
 	if "current_scene" in st.session_state:
@@ -79,29 +84,9 @@ with st.sidebar:
 			st.caption(f"Debug: Looking for scene_id='{scene_id}' (type: {type(scene_id)})")
 			st.caption(f"Debug: SCENES dict has {len(SCENES)} scenes")
 	
-	# Debug panel (expandable)
-	st.divider()
-	with st.expander("🐛 Debug Info", expanded=False):
-		st.caption("Session State Values:")
-		st.text(f"current_scene: {st.session_state.get('current_scene', 'NOT SET')}")
-		st.text(f"messages count: {len(st.session_state.get('messages', []))}")
-		if "character" in st.session_state:
-			st.text(f"character SAN: {st.session_state['character'].get('san', 'N/A')}")
-		st.text(f"API key set: {bool(st.session_state.get('openai_api_key', ''))}")
-		
-		# Show full session state keys (without values to avoid clutter)
-		st.caption("Session State Keys:")
-		keys = [k for k in st.session_state.keys() if not k.startswith('_')]
-		st.write(", ".join(keys) if keys else "No keys")
-		
-		# Toggle debug mode
-		debug_mode = st.checkbox("Enable Debug Mode", value=st.session_state.get("_debug_mode", False))
-		st.session_state["_debug_mode"] = debug_mode
-		if debug_mode:
-			st.info("Debug mode enabled - state changes will be shown in main view")
-	
 	# Logging section
-	if st.session_state.get("character"):
+	character = st.session_state.get("character")
+	if character:
 		st.divider()
 		st.subheader("📝 Chat Log")
 		logger = get_logger()
@@ -131,9 +116,10 @@ with st.sidebar:
 		# Reset scene to arrival
 		st.session_state["current_scene"] = "arrival_village"
 		# Restart logger
-		if st.session_state.get("character"):
+		character = st.session_state.get("character")
+		if character:
 			stop_logger()
-			character_name = st.session_state["character"].get("name", "Unknown")
+			character_name = character.get("name", "Unknown")
 			init_logger(character_name, enable_print_capture=True)
 			st.session_state["_log_file"] = get_logger().log_file if get_logger() else None
 		st.success("Conversation restarted!")
@@ -143,7 +129,8 @@ st.title("KP Chat")
 
 character = st.session_state.get("character")
 if not character:
-	st.info("Please create and save a character on the 'Create Character' page first.")
+	st.warning("⚠️ No Character Created")
+	st.info("💡 Please go to the 'Create Character' page to create and save your character first before starting the game.")
 	st.stop()
 
 # Get avatar from character
@@ -234,16 +221,10 @@ if user_text:
 				# Update character state (especially SAN if changed)
 				if updated_character and updated_character.get("san") != character.get("san"):
 					st.session_state["character"] = updated_character
-					# Debug: show SAN change
-					if st.session_state.get("_debug_mode", False):
-						st.info(f"🔍 DEBUG: SAN changed from {character.get('san')} to {updated_character.get('san')}")
 					st.rerun()  # Rerun to update sidebar with new SAN value
 				
 				# Update scene state
 				if new_scene != current_scene:
-					# Debug: show scene change
-					if st.session_state.get("_debug_mode", False):
-						st.info(f"🔍 DEBUG: Scene changing from '{current_scene}' to '{new_scene}'")
 					st.session_state["current_scene"] = new_scene
 					st.rerun()  # Rerun to update sidebar scene display
 			except Exception as e:
