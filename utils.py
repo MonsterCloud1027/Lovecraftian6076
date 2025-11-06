@@ -8,7 +8,7 @@ def initialize_session_state() -> None:
 	if "messages" not in st.session_state:
 		st.session_state["messages"] = []
 	if "current_scene" not in st.session_state:
-		st.session_state["current_scene"] = "arrival"
+		st.session_state["current_scene"] = "arrival_village"
 
 
 def save_character(

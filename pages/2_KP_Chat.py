@@ -51,8 +51,34 @@ with st.sidebar:
 		from agents.scenes import SCENES
 		scene_id = st.session_state["current_scene"]
 		scene_info = SCENES.get(scene_id, {})
-		st.text(scene_info.get("name", scene_id))
-		st.caption(scene_info.get("description", ""))
+		
+		if scene_info:
+			# Display scene name
+			scene_name = scene_info.get("name", scene_id)
+			st.text(f"📍 {scene_name}")
+			
+			# Display scene description
+			scene_description = scene_info.get("description", "")
+			if scene_description:
+				st.caption(scene_description)
+			
+			# Display NPCs if available
+			npcs = scene_info.get("npcs", [])
+			if npcs:
+				st.caption("NPCs:")
+				for npc in npcs:
+					if isinstance(npc, dict):
+						npc_name = npc.get("name", "Unknown")
+						npc_role = npc.get("role", "")
+						st.caption(f"  • {npc_name}" + (f" ({npc_role})" if npc_role else ""))
+					else:
+						st.caption(f"  • {npc}")
+		else:
+			st.warning(f"Scene '{scene_id}' not found")
+			st.caption(f"Available scenes: {', '.join(SCENES.keys())}")
+			# Debug: show what we're looking for
+			st.caption(f"Debug: Looking for scene_id='{scene_id}' (type: {type(scene_id)})")
+			st.caption(f"Debug: SCENES dict has {len(SCENES)} scenes")
 	
 	# Debug panel (expandable)
 	st.divider()
@@ -81,7 +107,7 @@ with st.sidebar:
 		# Clear messages
 		st.session_state["messages"] = []
 		# Reset scene to arrival
-		st.session_state["current_scene"] = "arrival"
+		st.session_state["current_scene"] = "arrival_village"
 		st.success("Conversation restarted!")
 		st.rerun()
 
@@ -97,7 +123,21 @@ user_avatar = character.get("avatar") if character else None
 
 # Initialize current scene in session state
 if "current_scene" not in st.session_state:
-	st.session_state["current_scene"] = "arrival"
+	st.session_state["current_scene"] = "arrival_village"
+else:
+	# Fix old scene IDs that may exist in session state
+	old_scene = st.session_state["current_scene"]
+	scene_mapping = {
+		"arrival": "arrival_village",
+		"exploration_inn": "leddbetter_house",
+		"exploration_village": "exploration_day",
+		"exploration_church": "beacon_discovery",
+		"final_ritual": "festival_night"
+	}
+	if old_scene in scene_mapping:
+		new_scene = scene_mapping[old_scene]
+		st.session_state["current_scene"] = new_scene
+		st.rerun()  # Rerun to apply the fix immediately
 
 # Generate opening scene if this is the first time (no messages yet)
 character_name = character.get("name", "Investigator")
@@ -141,7 +181,7 @@ if user_text:
 		with st.spinner("KP is thinking..."):
 			try:
 				api_key = st.session_state.get("openai_api_key", "")
-				current_scene = st.session_state.get("current_scene", "arrival")
+				current_scene = st.session_state.get("current_scene", "arrival_village")
 				
 				result = get_kp_response(
 					user_input=user_text,

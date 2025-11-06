@@ -43,15 +43,15 @@ st.caption("Set up your CoC investigator. More attributes can be added later.")
 st.info("""
 **📖 Story: Alone Against the Flames**
 
-**Identity:** Ordinary person (Investigator, profession optional), preparing to move to a new town to start a new life.
+**Timeline:** A sweltering summer in the 1920s. You are an ordinary traveler bound for Arkham (profession optional: professor, doctor, journalist, etc.).
 
-**Opening Scene:** You are taking a long-distance bus. The bus breaks down en route, and the driver takes you to a remote village. Strange events begin to unfold as you discover the villagers are preparing for a sinister ritual.
+**Opening Scene:** Your long-distance bus breaks down, diverting you to a remote village where a sinister ritual is quietly taking shape.
 
-You are about to begin a journey into the unknown. Your character will navigate through mysterious events, uncovering dark secrets, and ultimately face a terrible choice. Create your investigator below and prepare for what lies ahead...
+Prepare your investigator below and step into the unknown.
 """)
 
 # Avatar selection (outside form to use buttons)
-st.subheader("Avatar Selection")
+st.subheader("Image Selection")
 
 # Initialize selected avatar in session state
 if "selected_avatar" not in st.session_state:

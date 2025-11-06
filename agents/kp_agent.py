@@ -227,10 +227,7 @@ When player action requires a check:
 3. Use that result in your narration without mentioning the tool call
 4. Continue narrating based on the result
 
-**Do NOT:**
-- Say "I will roll dice" or "Let me check"
-- Describe that you are performing a check
-- Ask permission before rolling
+
 
 **Do:**
 - Call the tool directly when needed
@@ -446,7 +443,7 @@ def keeper_node(state: AgentState) -> AgentState:
 
 def scene_node(state: AgentState) -> AgentState:
 	"""Handle scene transition logic"""
-	current_scene = state.get("current_scene", "arrival")
+	current_scene = state.get("current_scene", "arrival_village")
 	next_scene = state.get("next_scene", current_scene)
 	scene_history = state.get("scene_history", [])
 	
@@ -521,7 +518,7 @@ def get_kp_response(
 	character: Dict[str, Any],
 	chat_history: List[Dict[str, str]],
 	api_key: str = "",
-	current_scene: str = "arrival"
+	current_scene: str = "arrival_village"
 ) -> Dict[str, Any]:
 	"""
 	Main function to get KP response using LangGraph with scenes and tools
