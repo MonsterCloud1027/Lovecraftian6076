@@ -105,6 +105,12 @@ export default function CreateCharacterPage() {
 
   const rollLuck = () => {
     if (rollCount >= 3) return;
+    // 播放骰子音效
+    const diceSound = new Audio("/lib/MP3/dice.mp3");
+    diceSound.volume = 0.5;
+    diceSound.play().catch((error) => {
+      console.error("Error playing dice sound:", error);
+    });
     setShowDice3D(true);
   };
 

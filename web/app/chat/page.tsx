@@ -275,6 +275,12 @@ export default function ChatPage() {
 
   const handleDiceRollClick = () => {
     if (!pendingDiceRequest) return;
+    // 播放骰子音效
+    const diceSound = new Audio("/lib/MP3/dice.mp3");
+    diceSound.volume = 0.5;
+    diceSound.play().catch((error) => {
+      console.error("Error playing dice sound:", error);
+    });
     setDiceNotation("1d100");
     setShowDiceOverlay(true);
   };
