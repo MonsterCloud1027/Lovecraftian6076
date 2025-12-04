@@ -209,11 +209,26 @@ export default function CreateCharacterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white overflow-x-hidden">
-      <section className="min-h-screen py-20">
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white overflow-x-hidden relative">
+      {/* Background image with blur and opacity */}
+      <div 
+        className="fixed inset-0 z-1"
+        style={{
+          backgroundImage: "url('/lib/pic/book.jpg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          opacity: 0.8,
+          filter: "blur(4px)",
+        }}
+      />
+      {/* Overlay to ensure readability */}
+      <div className="fixed inset-0 z-0 bg-gradient-to-b from-slate-950/80 via-slate-900/70 to-slate-950/80" />
+      
+      <section className="min-h-screen py-20 relative z-10">
         <div className="max-w-6xl mx-auto px-6 space-y-8">
           {/* Module Synopsis */}
-          <div className="w-full max-w-4xl mx-auto bg-slate-900/80 border border-amber-900 rounded-3xl p-8 lg:p-10 shadow-[0_0_60px_rgba(8,7,5,0.8)]">
+          <div className="w-full max-w-4xl mx-auto bg-slate-800/50 border border-amber-900 rounded-3xl p-8 lg:p-10 shadow-[0_0_60px_rgba(8,7,5,0.8)] backdrop-blur-sm">
             <div className="space-y-6 text-amber-100">
               <div>
                 <p className="text-sm uppercase tracking-widest text-amber-400">Interactive Solo Scenario</p>
@@ -242,7 +257,7 @@ export default function CreateCharacterPage() {
             </p>
           </header>
 
-        <section className="bg-slate-900/60 border border-slate-800 rounded-xl p-6 space-y-6">
+        <section className="bg-slate-800/40 border border-slate-700 rounded-xl p-6 space-y-6 backdrop-blur-sm">
           <div>
             <h2 className="text-xl font-semibold mb-1">Select Preset Character</h2>
             <p className="text-sm text-slate-400">Choose a preset character or create your own</p>
@@ -320,11 +335,11 @@ export default function CreateCharacterPage() {
           </div>
         </section>
 
-        <section className="bg-slate-900/60 border border-slate-800 rounded-xl p-6 space-y-6">
+        <section className="bg-slate-800/40 border border-slate-700 rounded-xl p-6 space-y-6 backdrop-blur-sm">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <h2 className="text-xl font-semibold">LUCK</h2>
-              <p className="text-sm text-slate-400 mt-1">Roll 3d6×5 (up to 3 times, keep the best result)</p>
+              <p className="text-sm text-slate-400 mt-1">Roll (3d6)×5 (up to 3 times, keep the best result)</p>
             </div>
             <button
               onClick={rollLuck}
@@ -361,13 +376,13 @@ export default function CreateCharacterPage() {
                       </div>
                       {rollDiceValues && rollDiceValues.length === 3 && (
                         <div className="mb-2 text-xs text-slate-400">
-                          <span className="font-semibold">3d6: </span>
+                          <span className="font-semibold">(</span>
                           {rollDiceValues.map((d, i) => (
                             <span key={i} className="mx-1">
                               {d}{i < rollDiceValues.length - 1 ? " + " : ""}
                             </span>
                           ))}
-                          <span className="ml-1">× 5</span>
+                          <span className="font-semibold">) × 5</span>
                         </div>
                       )}
                       <p className="text-3xl font-bold text-slate-100">{value}</p>
@@ -392,7 +407,7 @@ export default function CreateCharacterPage() {
 
         <section className="grid md:grid-cols-2 gap-6">
           {/* Core Attributes */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6 space-y-5">
+          <div className="bg-slate-800/40 border border-slate-700 rounded-xl p-6 space-y-5 backdrop-blur-sm">
             <div>
               <h2 className="text-xl font-semibold mb-1">Core Attributes</h2>
               <p className="text-sm text-slate-400">STR + INT + POW ≤ 180</p>
@@ -443,7 +458,7 @@ export default function CreateCharacterPage() {
           </div>
 
           {/* Skills */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6 space-y-5">
+          <div className="bg-slate-800/40 border border-slate-700 rounded-xl p-6 space-y-5 backdrop-blur-sm">
             <div>
               <h2 className="text-xl font-semibold mb-1">Skills</h2>
               <p className="text-sm text-slate-400">Budget: {skillBudget} points (INT × 4)</p>
@@ -496,12 +511,12 @@ export default function CreateCharacterPage() {
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-slate-800/60 border border-slate-700 rounded-lg p-3">
+              <div className="bg-slate-800/40 border border-slate-700 rounded-lg p-3 backdrop-blur-sm">
                 <div className="text-xs text-slate-400 mb-1">SAN (Sanity)</div>
                 <div className="text-xl font-bold text-emerald-300">{san}</div>
                 <div className="text-xs text-slate-500 mt-1">= POW</div>
               </div>
-              <div className="bg-slate-800/60 border border-slate-700 rounded-lg p-3">
+              <div className="bg-slate-800/40 border border-slate-700 rounded-lg p-3 backdrop-blur-sm">
                 <div className="text-xs text-slate-400 mb-1">LUCK</div>
                 <div className="text-xl font-bold text-indigo-300">{bestLuck}</div>
                 <div className="text-xs text-slate-500 mt-1">Rolled above</div>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Volume2, VolumeX } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { SparklesCore } from "./ui/sparkles";
 
@@ -42,6 +42,10 @@ export default function HomePage() {
   const [showSynopsis, setShowSynopsis] = useState(false);
   const [galleryCollapsed, setGalleryCollapsed] = useState(false);
   const [diceRotation, setDiceRotation] = useState(0);
+  const [flickerKey, setFlickerKey] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -51,6 +55,80 @@ export default function HomePage() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // 定期重新触发闪烁动画
+  useEffect(() => {
+    // 初始延迟后开始定期触发（让初始动画先完成）
+    const initialDelay = setTimeout(() => {
+      // 每 8-12 秒随机触发一次
+      const triggerFlicker = () => {
+        // 通过更新 key 来重新触发动画
+        setFlickerKey((prev) => prev + 1);
+        const nextDelay = 15000 + Math.random() * 4000; // 8-12秒随机
+        setTimeout(triggerFlicker, nextDelay);
+      };
+      triggerFlicker();
+    }, 5000); // 初始5秒后开始
+
+    return () => clearTimeout(initialDelay);
+  }, []);
+
+  // 背景音乐控制
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    // 设置循环播放
+    audio.loop = true;
+    audio.volume = 0.3; // 设置音量为30%
+
+    // 尝试自动播放（可能需要用户交互）
+    const tryPlay = async () => {
+      try {
+        await audio.play();
+        setIsPlaying(true);
+      } catch (error) {
+        // 自动播放被阻止，等待用户交互
+        console.log("Autoplay prevented, waiting for user interaction");
+      }
+    };
+
+    tryPlay();
+
+    // 监听播放状态
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+    const handleEnded = () => setIsPlaying(false);
+
+    audio.addEventListener("play", handlePlay);
+    audio.addEventListener("pause", handlePause);
+    audio.addEventListener("ended", handleEnded);
+
+    return () => {
+      audio.removeEventListener("play", handlePlay);
+      audio.removeEventListener("pause", handlePause);
+      audio.removeEventListener("ended", handleEnded);
+    };
+  }, []);
+
+  // 处理静音/取消静音（同时确保音乐在播放）
+  const toggleMute = async () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    // 如果音乐未播放，先尝试播放
+    if (!isPlaying) {
+      try {
+        await audio.play();
+      } catch (error) {
+        console.error("Error playing audio:", error);
+      }
+    }
+
+    // 切换静音状态
+    audio.muted = !isMuted;
+    setIsMuted(!isMuted);
+  };
 
   const handleBookClick = (bookId: string) => {
     const book = BOOKS.find((b) => b.id === bookId);
@@ -73,6 +151,25 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white overflow-x-hidden">
+      {/* 背景音乐 */}
+      <audio ref={audioRef} src="/lib/MP3/bgm.mp3" preload="auto" />
+      
+      {/* 音乐控制按钮 */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <button
+          onClick={toggleMute}
+          className="p-3 rounded-full bg-black/40 backdrop-blur-sm border border-emerald-200/30 hover:bg-black/60 transition-all shadow-lg hover:shadow-emerald-500/50 group"
+          aria-label={isMuted ? "Unmute" : "Mute"}
+          title={isMuted ? "取消静音" : "静音"}
+        >
+          {isMuted ? (
+            <VolumeX className="w-5 h-5 text-emerald-300 group-hover:scale-110 transition-transform" />
+          ) : (
+            <Volume2 className="w-5 h-5 text-emerald-300 group-hover:scale-110 transition-transform" />
+          )}
+        </button>
+      </div>
+
       {/* Hero Section */}
       <section className="min-h-screen flex items-center justify-center relative overflow-hidden">
         <div className="absolute inset-0 animate-background-fade-in">
@@ -89,6 +186,7 @@ export default function HomePage() {
 
         <div className="relative z-10 text-center space-y-6 animate-title-slide-in">
           <h1
+            key={`flicker-h1-${flickerKey}`}
             className="text-8xl md:text-[12rem] font-bold tracking-tight animate-title-shadow-flicker"
             style={{
               fontFamily: "var(--font-metal-mania), serif",
@@ -98,18 +196,19 @@ export default function HomePage() {
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
               textShadow: "none",
-              animationDelay: "1s",
+              animationDelay: flickerKey === 0 ? "1s" : "0s",
             }}
           >
             Lovecraftian
           </h1>
           <h2
+            key={`flicker-h2-${flickerKey}`}
             className="text-6xl md:text-9xl tracking-wider animate-title-shadow-flicker"
             style={{
               fontFamily: "var(--font-metal-mania), serif",
               color: "#cbd5e1",
               textShadow: "none",
-              animationDelay: "1s",
+              animationDelay: flickerKey === 0 ? "1s" : "0s",
             }}
           >
             Language Mode
@@ -123,7 +222,7 @@ export default function HomePage() {
             />
           </div>
           <div className="mt-10 flex justify-center">
-            <div className="p-3 rounded-full border border-emerald-200/60 shadow-[0_0_25px_rgba(16,185,129,0.35)] bg-black/30 backdrop-blur-sm">
+            <div className="p-3 rounded-full border border-emerald-200/60 shadow-[0_0_25px_rgba(16,185,129,0.35)] bg-black/30 backdrop-blur-sm animate-spin-slow">
               <Image
                 src="/lib/pic/d20.png"
                 alt="D20 Icon"
@@ -174,6 +273,25 @@ export default function HomePage() {
         </div>
 
         <div className="relative w-full max-w-7xl mx-auto px-6 pb-[22rem] lg:pb-1">
+          {/* 标题区域 */}
+          {!bookOpened && (
+            <div className="relative z-10 text-center mb-16 animate-fade-in">
+              <h2
+                className="text-5xl md:text-7xl font-bold mb-4 tracking-wide"
+                style={{
+                  fontFamily: "var(--font-metal-mania), serif",
+                  color: "#cbd5e1",
+                  textShadow: "0 0 20px rgba(16, 185, 129, 0.5), 0 0 40px rgba(16, 185, 129, 0.3)",
+                }}
+              >
+                Choose Your Adventure
+              </h2>
+              <p className="text-lg md:text-xl text-slate-300/80 max-w-2xl mx-auto leading-relaxed">
+                Select a scenario from the Mythos series and begin your journey into the unknown
+              </p>
+            </div>
+          )}
+
           <div
             className={[
               "books-gallery relative z-10",
