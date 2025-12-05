@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: coc-solo-api
+    runtime: python
+    buildCommand: pip install -r requirements-production.txt
+    startCommand: uvicorn api_server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+    healthCheckPath: /api/health
+
