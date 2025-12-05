@@ -3,7 +3,6 @@ import os
 import sys
 from datetime import datetime
 from typing import Optional
-import streamlit as st
 
 
 class ChatLogger:

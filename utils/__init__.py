@@ -1,10 +1,19 @@
 """Utils package for CoC Solo module"""
-import streamlit as st
+# Streamlit is optional - only needed for Streamlit UI
+try:
+    import streamlit as st
+    _HAS_STREAMLIT = True
+except ImportError:
+    _HAS_STREAMLIT = False
+    st = None
+
 from .logging import init_logger, get_logger, log_message, stop_logger, log_system, log_tool_call
 
 
 def initialize_session_state() -> None:
 	"""Initialize Streamlit session state variables"""
+	if not _HAS_STREAMLIT:
+		raise ImportError("streamlit is required for initialize_session_state")
 	if "character" not in st.session_state:
 		st.session_state["character"] = None
 	if "messages" not in st.session_state:
@@ -24,6 +33,8 @@ def save_character(
 	background_story: str = ""
 ) -> None:
 	"""Save character data to session state"""
+	if not _HAS_STREAMLIT:
+		raise ImportError("streamlit is required for save_character")
 	st.session_state["character"] = {
 		"name": name.strip(),
 		"str": int(str_attr),
