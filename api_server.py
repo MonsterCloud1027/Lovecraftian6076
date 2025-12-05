@@ -114,6 +114,18 @@ async def api_download_log(character: str):
     raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
+@app.get("/")
+async def root():
+  return {
+    "message": "CoC Solo API",
+    "status": "running",
+    "endpoints": {
+      "health": "/api/health",
+      "kp_response": "/api/kp/response",
+      "download_log": "/api/logs/download"
+    }
+  }
+
 @app.get("/api/health")
 async def api_health():
   return {"status": "ok"}
