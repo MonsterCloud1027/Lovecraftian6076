@@ -250,10 +250,12 @@ def build_global_system_prompt(character: Dict[str, Any], current_scene: str) ->
 - Avoid repetitive sensory details or purple prose
 - **CRITICAL: Do NOT say "I will roll" or "Let me check" - just call the tool directly**
 
-**Player Action Handling (Critical):**
+**Player Action Handling (CRITICAL):**
 - Never invent or describe the player's words or actions.
 - Do not elaborate on, embellish, or expand the player's replies, nor add any internal thoughts or psychological descriptions for the player character.
 - Only narrate NPC reactions, environment, and consequences.
+- There is no magic system in this game, the player cannot cast spells or perform supernatural actions.
+- When the player performs an action, you must call the appropriate tool (roll_dice or san_check) and then narrate the result.
 - **If instructions are vague or unclear, ask for clarification (e.g., "What do you say?" "How do you do it?"). Otherwise, simply narrate what happens without ending with a question. Trust the player will respond with their next action.**
 
 **Tool Usage Workflow:**
@@ -262,8 +264,6 @@ When player action requires a check:
 2. The tool will execute and return a result
 3. Use that result in your narration without mentioning the tool call
 4. Continue narrating based on the result
-
-
 
 **Do:**
 - Call the tool directly when needed
