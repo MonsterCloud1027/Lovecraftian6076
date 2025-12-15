@@ -44,12 +44,15 @@ class KPRequest(BaseModel):
   chat_history: List[Dict[str, str]]
   api_key: str
   current_scene: str = "arrival_village"
+  memory: Optional[List[str]] = None  # Game memory from frontend
+  turn_count: Optional[int] = None  # Turn count from frontend
 
 
 class KPResult(BaseModel):
   response: str
   current_scene: str
   character: Optional[Dict[str, Any]] = None
+  memory: Optional[List[str]] = None  # Updated memory
 
 
 @app.post("/api/kp/response", response_model=KPResult)
@@ -61,21 +64,28 @@ async def api_kp_response(payload: KPRequest):
 
     log_message("user", payload.user_input, payload.current_scene)
 
+    # Pass memory and turn_count to the agent
     result = get_kp_response(
       user_input=payload.user_input,
       character=payload.character,
       chat_history=payload.chat_history,
       api_key=payload.api_key,
       current_scene=payload.current_scene,
+      memory=payload.memory or [],
+      turn_count=payload.turn_count or 0,
     )
 
     new_scene = result.get("current_scene", payload.current_scene)
     log_message("assistant", result["response"], new_scene)
 
+    result_memory = result.get("memory", [])
+    print(f"📝 [API] Returning memory: {len(result_memory)} entries")
+
     return KPResult(
       response=result["response"],
       current_scene=new_scene,
       character=result.get("character"),
+      memory=result_memory,  # Always return memory, even if empty list
     )
   except Exception as exc:
     raise HTTPException(status_code=500, detail=str(exc)) from exc

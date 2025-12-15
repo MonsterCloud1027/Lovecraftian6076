@@ -26,6 +26,8 @@ class AgentState(TypedDict, total=False):
 	san_loss: int  # SAN loss from san_check
 	pending_dice_result: str  # Pending dice result to include in response
 	pending_san_result: str  # Pending SAN check result to include in response
+	memory: Annotated[List[str], "Game memory - summaries of key events"]
+	turn_count: int  # Number of turns since last memory update
 
 
 # ==================== DICE TOOL ====================
@@ -250,10 +252,12 @@ def build_global_system_prompt(character: Dict[str, Any], current_scene: str) ->
 - Avoid repetitive sensory details or purple prose
 - **CRITICAL: Do NOT say "I will roll" or "Let me check" - just call the tool directly**
 
-**Player Action Handling (Critical):**
+**Player Action Handling (CRITICAL):**
 - Never invent or describe the player's words or actions.
 - Do not elaborate on, embellish, or expand the player's replies, nor add any internal thoughts or psychological descriptions for the player character.
 - Only narrate NPC reactions, environment, and consequences.
+- There is no magic system in this game, the player cannot cast spells or perform supernatural actions.
+- When the player performs an action, you must call the appropriate tool (roll_dice or san_check) and then narrate the result.
 - **If instructions are vague or unclear, ask for clarification (e.g., "What do you say?" "How do you do it?"). Otherwise, simply narrate what happens without ending with a question. Trust the player will respond with their next action.**
 
 **Tool Usage Workflow:**
@@ -262,8 +266,6 @@ When player action requires a check:
 2. The tool will execute and return a result
 3. Use that result in your narration without mentioning the tool call
 4. Continue narrating based on the result
-
-
 
 **Do:**
 - Call the tool directly when needed
@@ -293,29 +295,110 @@ Common scene IDs: arrival_village, leddbetter_house, village_hall, ruined_church
 - POW: Resisting mental influence, magical resistance, willpower
 
 **Critical Tool Usage Rules:**
-- **NEVER describe or announce that you will perform a check - ALWAYS call the roll_dice tool directly**
+- **NEVER describe or announce that you will perform a check - ALWAYS call the roll_dice or san_check tool directly**
 - **DO NOT say "I will roll dice" or "I need to check" - just call the tool immediately**
 - **When a skill check is needed, call roll_dice tool BEFORE responding - do not ask permission or describe the action**
+- **When horror is witnessed, call san_check tool IMMEDIATELY - do not describe the check first**
 - Use the correct skill name when calling roll_dice (e.g., "Spot Hidden" for SPOT checks, "Strength" for STR checks)
-- After calling roll_dice, incorporate the result naturally into your narration without mentioning "I rolled" or "the dice show"
+- After calling roll_dice or san_check, incorporate the result naturally into your narration without mentioning "I rolled" or "the dice show"
+- **Tool calls should happen in the SAME response where the need arises - do not delay or defer**
 
 **Scene Transition Rules:**
 - **CRITICAL:** When the player's actions clearly indicate moving to a new location or entering a different scene, you MUST call the change_scene tool BEFORE continuing narration
-- Examples: Player accepts invitation to stay at May's house → call change_scene("leddbetter_house") immediately
-- Player enters village hall → call change_scene("village_hall") immediately
-- Player goes to ruined church → call change_scene("ruined_church") immediately
+- **ALWAYS call change_scene tool FIRST, then narrate from the new scene's perspective**
+- Examples: 
+  * Player accepts invitation to stay at May's house → IMMEDIATELY call change_scene("leddbetter_house") then narrate
+  * Player enters village hall → IMMEDIATELY call change_scene("village_hall") then narrate
+  * Player goes to ruined church → IMMEDIATELY call change_scene("ruined_church") then narrate
+  * Player approaches the Beacon or ritual begins → IMMEDIATELY call change_scene("ritual") then narrate
 - The change_scene tool will automatically update the scene context and prompt for you
-- After calling change_scene, continue narrating from the new scene's perspective
 - **Do NOT wait for the player to explicitly ask for a scene change - if their actions clearly indicate entering a new location, call the tool immediately**
+- **Do NOT describe the scene change - just call the tool and then narrate from the new scene**
+
+**Ending Scene Rules (CRITICAL):**
+- When you are in the "ending" scene, the game has reached its conclusion
+- **Provide a brief, conclusive epilogue (2-4 sentences maximum)**
+- **Do NOT continue the story or ask what the player does next**
+- **Do NOT call any tools (no dice rolls, no scene changes)**
+- **End with a clear conclusion that signals the game is over**
 
 **General Rules:**
 - Stay in character as the KP and guide the story forward
 - Be creative but stay within the CoC horror atmosphere
 - Follow the scene-specific prompts provided to you for guidance on style and key elements
 - Remember: You have tools available. Use them directly, don't describe using them.
+- **When in doubt about whether to call a tool, call it - tools are meant to be used proactively**
 """
 
 	return global_prompt
+
+
+# ==================== MEMORY SUMMARIZATION ====================
+
+def summarize_recent_events(
+	messages: List[BaseMessage],
+	character: Dict[str, Any],
+	current_scene: str,
+	api_key: str,
+	memory: List[str]
+) -> str:
+	"""
+	Summarize recent player actions and game events into a concise memory entry.
+	Runs every few turns to create a short summary of what happened.
+	"""
+	if not api_key:
+		return ""
+	
+	# Get the last 6-8 messages (3-4 exchanges) for context
+	recent_messages = messages[-8:] if len(messages) > 8 else messages
+	
+	# Extract text from recent messages
+	recent_text = []
+	for msg in recent_messages:
+		if isinstance(msg, HumanMessage):
+			recent_text.append(f"Player: {msg.content[:200]}")
+		elif isinstance(msg, AIMessage) and msg.content:
+			# Skip dice/SAN check markers
+			content = msg.content
+			if not content.startswith("[DICE_REQUEST:") and not content.startswith("[SAN_CHECK_REQUEST:"):
+				recent_text.append(f"Keeper: {content[:300]}")
+	
+	recent_context = "\n".join(recent_text)
+	
+	# Get existing memory for context
+	existing_memory = "\n".join(memory[-5:]) if memory else "No previous memories."
+	
+	# Create summarization prompt
+	summarization_prompt = f"""You are summarizing recent events in a Call of Cthulhu game session.
+
+Character: {character.get('name', 'Investigator')}
+Current Scene: {current_scene}
+
+Recent conversation:
+{recent_context}
+
+Existing memories:
+{existing_memory}
+
+Create a SHORT, key-word based summary (1-2 sentences maximum) of the most important player actions and game events from the recent conversation. Focus on:
+- What the player did
+- Important discoveries or clues
+- Scene changes or location movements
+- Significant game events (dice rolls, SAN checks, encounters)
+
+Write ONLY the bullet points, nothing else. Be specific and brief."""
+
+	try:
+		llm = ChatOpenAI(
+			model="gpt-4o-mini",
+			temperature=0.3,
+			api_key=api_key
+		)
+		summary = llm.invoke([SystemMessage(content=summarization_prompt)]).content
+		return summary.strip()
+	except Exception as e:
+		print(f"    ⚠️ [MEMORY] Error generating summary: {e}")
+		return ""
 
 
 # ==================== NODES ====================
@@ -326,6 +409,11 @@ def keeper_node(state: AgentState) -> AgentState:
 	character: Dict[str, Any] = state["character"]
 	api_key: str = state.get("api_key", "")
 	current_scene: str = state.get("current_scene", "arrival_village")
+	memory: List[str] = state.get("memory", [])
+	turn_count: int = state.get("turn_count", 0)
+	
+	# Debug: Always log when keeper_node is called
+	print(f"\n🧠 [MEMORY] keeper_node called - messages count: {len(messages)}, memory length: {len(memory)}, turn_count: {turn_count}")
 	
 	# Check if the last user message contains a DiceResult
 	# Format: "DiceResult: 73" or "DiceResult: 73:skill_name:difficulty:skill_value" or "SANResult: 73:current_san:san_loss"
@@ -463,7 +551,6 @@ def keeper_node(state: AgentState) -> AgentState:
 	
 	# Process tool calls if any
 	# Note: san_loss_amount may already be set from DiceResult processing above
-	
 	if response.tool_calls:
 		print(f"\n🔧 [TOOL CALLS] Detected {len(response.tool_calls)} tool call(s)")
 		for tool_call in response.tool_calls:
@@ -572,6 +659,61 @@ def keeper_node(state: AgentState) -> AgentState:
 			final_response = llm.invoke([system_msg] + new_messages)
 			new_messages.append(final_response)
 			print(f"✅ [FINAL RESPONSE] Generated final response")
+	
+	# ========== MEMORY CHECK ==========
+	# Memory summarization: run every 4 turns
+	messages_to_count = new_messages
+	
+	# Count all user messages, excluding dice results
+	user_message_count = 0
+	for msg in messages_to_count:
+		if isinstance(msg, HumanMessage) and isinstance(msg.content, str):
+			content = msg.content
+			if not (content.startswith("DiceResult:") or 
+			        content.startswith("SANResult:") or 
+			        content.startswith("Dice roll result:")):
+				user_message_count += 1
+	
+	# Always print memory check - this should ALWAYS execute
+	print(f"\n🧠 [MEMORY] ========== MEMORY CHECK ==========")
+	print(f"    Total messages in state: {len(messages)}")
+	print(f"    Turn count: {turn_count}")
+	print(f"    Should summarize? {user_message_count > 0 and user_message_count % 4 == 0}")
+	print(f"🧠 [MEMORY] ==================================")
+	
+	# Update memory every 4 user messages (every 4 turns)
+	# We check if we've reached a multiple of 4 turns
+	should_summarize = False
+	if user_message_count > 0 and user_message_count % 4 == 0:
+		# Check if we have enough messages for context
+		# Need at least 4 messages (2 user + 2 assistant) for a meaningful summary
+		if len(messages) >= 4:
+			# Only summarize if the last message was from the assistant (not a dice request)
+			last_msg = new_messages[-1] if new_messages else None
+			if last_msg and isinstance(last_msg, AIMessage) and last_msg.content:
+				# Skip if the last message is just a dice request marker
+				if not (last_msg.content.startswith("[DICE_REQUEST:") or last_msg.content.startswith("[SAN_CHECK_REQUEST:")):
+					should_summarize = True
+					print(f"    ✅ [MEMORY] Will generate summary (user_message_count={user_message_count} is divisible by 4)")
+				else:
+					print(f"    ⏭️ [MEMORY] Skipping - last message is dice request")
+			else:
+				print(f"    ⏭️ [MEMORY] Skipping - no valid last assistant message")
+		else:
+			print(f"    ⏭️ [MEMORY] Skipping - not enough messages ({len(messages)} < 4)")
+	else:
+		print(f"    ⏭️ [MEMORY] Skipping - user_message_count={user_message_count} is not divisible by 4")
+	
+	# Generate memory summary if needed
+	if should_summarize and api_key:
+		print(f"\n🧠 [MEMORY] Generating memory summary (turn {turn_count + 1})")
+		summary = summarize_recent_events(new_messages, character, current_scene, api_key, memory)
+		if summary:
+			memory = memory + [summary]
+			print(f"    ✅ [MEMORY] Added: {summary[:100]}...")
+	
+	# Increment turn count
+	turn_count = turn_count + 1
 
 	return {
 		"messages": new_messages,
@@ -582,7 +724,9 @@ def keeper_node(state: AgentState) -> AgentState:
 		"dice_results": state.get("dice_results", []),
 		"san_loss": san_loss_amount,
 		"pending_dice_result": pending_dice_result,
-		"pending_san_result": pending_san_result
+		"pending_san_result": pending_san_result,
+		"memory": memory,  # Updated memory
+		"turn_count": turn_count  # Updated turn count
 	}
 
 
@@ -675,7 +819,9 @@ def get_kp_response(
 	character: Dict[str, Any],
 	chat_history: List[Dict[str, str]],
 	api_key: str = "",
-	current_scene: str = "arrival_village"
+	current_scene: str = "arrival_village",
+	memory: List[str] = None,
+	turn_count: int = 0
 ) -> Dict[str, Any]:
 	"""
 	Main function to get KP response using LangGraph with scenes and tools
@@ -709,6 +855,10 @@ def get_kp_response(
 	# Build graph
 	graph = build_kp_graph()
 	
+	# Use provided memory and turn_count, or initialize if not provided
+	existing_memory = memory if memory is not None else []
+	current_turn_count = turn_count
+	
 	# Invoke graph
 	state = {
 		"messages": lc_messages,
@@ -718,7 +868,9 @@ def get_kp_response(
 		"scene_history": [],
 		"dice_results": [],
 		"next_action": "continue",
-		"next_scene": current_scene
+		"next_scene": current_scene,
+		"memory": existing_memory,
+		"turn_count": current_turn_count
 	}
 	
 	print(f"\n📊 [GRAPH] Invoking LangGraph with state")
@@ -788,10 +940,18 @@ def get_kp_response(
 	# Get updated character from result (with SAN changes if any)
 	updated_character = result.get("character", character)
 	
-	# Return response with scene info and updated character
+	# Get memory from result
+	result_memory = result.get("memory", [])
+	print(f"\n📝 [GET_KP_RESPONSE] Returning memory: {len(result_memory)} entries")
+	if result_memory:
+		for i, mem in enumerate(result_memory):
+			print(f"    [{i+1}] {mem[:80]}...")
+	
+	# Return response with scene info, updated character, and memory
 	return {
 		"response": final_response,
 		"current_scene": result.get("current_scene", current_scene),
 		"next_action": result.get("next_action", "continue"),
-		"character": updated_character  # Include updated character with new SAN value
+		"character": updated_character,  # Include updated character with new SAN value
+		"memory": result_memory  # Include memory (always return, even if empty)
 	}

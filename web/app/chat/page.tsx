@@ -103,12 +103,16 @@ export default function ChatPage() {
     messages,
     currentScene,
     apiKey,
+    memory,
+    turnCount,
     setMessages,
     addMessage,
     setCurrentScene,
     setApiKey,
     resetConversation,
     setCharacter,
+    setMemory,
+    setTurnCount,
   } = useStore();
 
   const [input, setInput] = useState("");
@@ -175,6 +179,10 @@ export default function ChatPage() {
     addMessage(userMessage);
     setInput("");
     setLoading(true);
+    
+    // Increment turn count
+    const newTurnCount = turnCount + 1;
+    setTurnCount(newTurnCount);
 
     try {
       const response = await getKPResponse(
@@ -182,7 +190,9 @@ export default function ChatPage() {
         character,
         [...messages, userMessage],
         apiKey,
-        currentScene
+        currentScene,
+        memory,
+        newTurnCount
       );
 
       const assistantText = response.response;
@@ -234,6 +244,10 @@ export default function ChatPage() {
       }
       if (response.character) {
         setCharacter(response.character);
+      }
+      if (response.memory !== undefined) {
+        console.log("📝 [MEMORY] Received memory from API:", response.memory);
+        setMemory(response.memory);
       }
     } catch (error) {
       addMessage({
@@ -315,7 +329,9 @@ export default function ChatPage() {
         character,
         [...messages, resultUserMessage],
         apiKey,
-        currentScene
+        currentScene,
+        memory,
+        turnCount
       );
 
       const assistantText = response.response;
@@ -356,6 +372,10 @@ export default function ChatPage() {
       }
       if (response.character) {
         setCharacter(response.character);
+      }
+      if (response.memory !== undefined) {
+        console.log("📝 [MEMORY] Received memory from API (dice result):", response.memory);
+        setMemory(response.memory);
       }
     } catch (error) {
       addMessage({
@@ -408,6 +428,27 @@ export default function ChatPage() {
               {currentScene}
             </p>
           </div>
+
+        
+           <div className="bg-amber-900/40 border border-amber-800/50 rounded-xl p-4 backdrop-blur-sm">
+             <h3 className="text-lg font-semibold text-amber-100 mb-3">Memory</h3>
+             <div className="space-y-3 max-h-96 overflow-y-auto">
+               {memory.length > 0 ? memory.map((entry, index) => (
+                 <div
+                   key={index}
+                   className="text-sm text-amber-200/90 bg-amber-950/60 px-3 py-2 rounded-lg border border-amber-800/60 leading-relaxed"
+                 >
+                   <span className="text-amber-400/70 text-xs font-mono mr-2">
+                     {String(index + 1).padStart(2, "0")}
+                   </span>
+                   {entry}
+                 </div>
+               )) : (
+                 <p className="text-sm text-amber-300/60 italic">No memories yet...</p>
+               )}
+             </div>
+           </div>
+        
 
           <div className="space-y-2">
             <button

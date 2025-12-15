@@ -26,11 +26,15 @@ interface AppState {
   messages: Message[];
   currentScene: string;
   apiKey: string;
+  memory: string[];
+  turnCount: number;
   setCharacter: (character: Character | null) => void;
   setMessages: (messages: Message[]) => void;
   addMessage: (message: Message) => void;
   setCurrentScene: (scene: string) => void;
   setApiKey: (key: string) => void;
+  setMemory: (memory: string[]) => void;
+  setTurnCount: (count: number) => void;
   resetConversation: () => void;
 }
 
@@ -41,16 +45,22 @@ export const useStore = create<AppState>()(
       messages: [],
       currentScene: "arrival_village",
       apiKey: "",
+      memory: [],
+      turnCount: 0,
       setCharacter: (character) => set({ character }),
       setMessages: (messages) => set({ messages }),
       addMessage: (message) =>
         set((state) => ({ messages: [...state.messages, message] })),
       setCurrentScene: (scene) => set({ currentScene: scene }),
       setApiKey: (key) => set({ apiKey: key }),
+      setMemory: (memory) => set({ memory }),
+      setTurnCount: (count) => set({ turnCount: count }),
       resetConversation: () =>
         set({
           messages: [],
           currentScene: "arrival_village",
+          memory: [],
+          turnCount: 0,
         }),
     }),
     {
