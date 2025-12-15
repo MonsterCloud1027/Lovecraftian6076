@@ -252,7 +252,13 @@ Drive toward a resolution. Use roll_dice for all contested actions and SAN. Choi
 **Player Context:**
 {character_name} | Final Stats: STR {str}, INT {int_val}, POW {pow}, SPOT {spot}, LISTEN {listen}, STEALTH {stealth}, CHARM {charm}, LUCK {luck}, SAN {san}
 
-Provide closure aligned to the chosen path. Keep it brief and resonant.
+**CRITICAL - ENDING SCENE:**
+This is the final scene. The game ends here. Provide a brief, conclusive epilogue (2-4 sentences maximum).
+- Do NOT continue the story
+- Do NOT ask what happens next
+- Do NOT call any tools (no dice rolls, no scene changes)
+- Make it memorable, resonant, and FINAL
+- The player's journey is complete - provide closure
 		""",
 		"transitions": [],
 		"npcs": [
