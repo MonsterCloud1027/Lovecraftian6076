@@ -6,6 +6,7 @@ export interface KPResponse {
   response: string;
   current_scene: string;
   character?: Character;
+  memory?: string[];
 }
 
 export async function getKPResponse(
@@ -13,7 +14,9 @@ export async function getKPResponse(
   character: Character,
   chatHistory: Message[],
   apiKey: string,
-  currentScene: string
+  currentScene: string,
+  memory: string[] = [],
+  turnCount: number = 0
 ): Promise<KPResponse> {
   const response = await fetch(`${API_BASE}/kp/response`, {
     method: "POST",
@@ -26,6 +29,8 @@ export async function getKPResponse(
       chat_history: chatHistory,
       api_key: apiKey,
       current_scene: currentScene,
+      memory: memory,
+      turn_count: turnCount,
     }),
   });
 
