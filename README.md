@@ -72,6 +72,8 @@
 
 ## 📸 Screenshots
 
+> **Note**: Add your screenshots to the `docs/` folder and update the paths below.
+
 <div align="center">
 
 ### Main Chat Interface
@@ -83,10 +85,12 @@
 *Create your investigator with custom attributes and background*
 
 ### Dice Rolling
-![Dice Rolling](./docs/dice-roll.png)
+![Dice Rolling](./docs/dice-roll.gif)
 *Interactive 3D dice rolling for skill checks and SAN tests*
 
-
+### Scene Transitions
+![Scene Transition](./docs/scene-transition.png)
+*Dynamic scene transitions with context-aware narration*
 
 </div>
 
@@ -358,7 +362,7 @@ Contributions are welcome! Areas where help is needed:
 
 ## 📄 License
 
-[Add your license information here]
+[GPL-3.0 license]
 
 ---
 
