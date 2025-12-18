@@ -72,7 +72,6 @@
 
 ## 📸 Screenshots
 
-> **Note**: Add your screenshots to the `docs/` folder and update the paths below.
 
 <div align="center">
 
@@ -85,12 +84,9 @@
 *Create your investigator with custom attributes and background*
 
 ### Dice Rolling
-![Dice Rolling](./docs/dice-roll.gif)
+![Dice Rolling](./docs/dice-roll.png)
 *Interactive 3D dice rolling for skill checks and SAN tests*
 
-### Scene Transitions
-![Scene Transition](./docs/scene-transition.png)
-*Dynamic scene transitions with context-aware narration*
 
 </div>
 
